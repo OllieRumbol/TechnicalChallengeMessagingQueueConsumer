@@ -1,29 +1,25 @@
-﻿using RabbitMQ.Client;
-using RabbitMQ.Client.Events;
-using System;
-using System.Text;
+﻿using Newtonsoft.Json;
+using TechnicalChallengeMessagingQueueConsumerService.products;
+using TechnicalChallengeMessagingQueueConsumerService.models;
+using TechnicalChallengeMessagingQueueConsumerService.queue;
 
-var factory = new ConnectionFactory() { HostName = "localhost" };
-using (var connection = factory.CreateConnection())
-using (var channel = connection.CreateModel())
+QueueProcessor queueProcessor = new QueueProcessor("localhost", "products");
+IProductService productsService = new ProductService();
+
+while (true)
 {
-    channel.QueueDeclare(queue: "hello",
-                         durable: false,
-                         exclusive: false,
-                         autoDelete: false,
-                         arguments: null);
+    String message = queueProcessor.ReadMessageFromQueue();
 
-    var consumer = new EventingBasicConsumer(channel);
-    consumer.Received += (model, ea) =>
+    if (String.IsNullOrEmpty(message))
     {
-        var body = ea.Body.ToArray();
-        var message = Encoding.UTF8.GetString(body);
-        Console.WriteLine(" [x] Received {0}", message);
-    };
-    channel.BasicConsume(queue: "hello",
-                         autoAck: true,
-                         consumer: consumer);
+        Console.WriteLine("No message in queue");
+        Thread.Sleep(1000);
+        continue;
+    }
 
-    Console.WriteLine(" Press [enter] to exit.");
-    Console.ReadLine();
+    Console.WriteLine($"Recived message: {message}");
+    Product product = JsonConvert.DeserializeObject<Product>(message);
+    Console.WriteLine(product.ToString());
+
+    productsService.AddProduct(product);
 }
