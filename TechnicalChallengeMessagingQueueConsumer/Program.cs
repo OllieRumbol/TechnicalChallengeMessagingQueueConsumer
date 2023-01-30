@@ -2,13 +2,25 @@
 using TechnicalChallengeMessagingQueueConsumerService.products;
 using TechnicalChallengeMessagingQueueConsumerService.models;
 using TechnicalChallengeMessagingQueueConsumerService.queue;
+using TechnicalChallengeMessagingQueuePublisherService.monitoring;
 
 QueueProcessor queueProcessor = new QueueProcessor("localhost", "products");
 IProductService productsService = new ProductService();
+IMonitoring monitoring = new Monitoring();
 
 while (true)
 {
-    String message = queueProcessor.ReadMessageFromQueue();
+    String message;
+    try
+    {
+        message = queueProcessor.ReadMessageFromQueue();
+    }
+    catch (Exception ex)
+    {
+        monitoring.LogExcpetion(ex);
+        continue;
+    }
+
 
     if (String.IsNullOrEmpty(message))
     {
